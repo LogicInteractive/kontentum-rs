@@ -123,7 +123,7 @@ impl<T> KontentumExhibit<T> {
         self.files
             .iter()
             .find(|file| file.id == id.to_string())
-            .map(|file| file.clone())
+            .cloned()
     }
 
     pub fn get_file_by_value(&self, value: &KontentumValue) -> Option<KontentumFile> {
