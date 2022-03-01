@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint-kontentum-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kontentum-core
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: check rustfmt
+        run: |
+          rustup component add rustfmt
+          cargo fmt -- --check --color always
+
+      - run: cargo fetch
+      - name: cargo clippy
+        run: |
+          rustup component add clippy
+          cargo clippy --all-targets -- -D warnings
+
+  lint-kontentum-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kontentum-client
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: check rustfmt
+        run: |
+          rustup component add rustfmt
+          cargo fmt -- --check --color always
+
+      - run: cargo fetch
+      - name: cargo clippy
+        run: |
+          rustup component add clippy
+          cargo clippy --all-targets -- -D warnings
