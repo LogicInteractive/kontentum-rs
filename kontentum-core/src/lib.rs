@@ -77,6 +77,9 @@ pub enum KontentumValue {
     #[serde(rename = "text")]
     Text { id: i32 },
 
+    #[serde(rename = "value")]
+    Value { value: String },
+
     #[serde(rename = "file")]
     File { id: i32 },
 
