@@ -32,7 +32,7 @@ pub struct KontentumExhibitInfo {
 pub struct KontentumFile {
     pub credit: String,
     pub description: String,
-    pub file: String,
+    pub file: Option<String>,
     pub filename: String,
     pub id: String,
     pub identifier: String,

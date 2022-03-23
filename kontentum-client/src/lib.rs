@@ -49,36 +49,40 @@ pub async fn download_file(
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Local file path
 
-    let mut local_path = std::env::current_dir()?;
-    local_path.push("kontentum");
-    local_path.push("files");
-    let _ = std::fs::create_dir_all(local_path.as_path())?; // Create directory if it does not yet exist
-    local_path.push(&kontentum_file.file.as_str());
+    if let Some(file) = &kontentum_file.file {
+        let mut local_path = std::env::current_dir()?;
+        local_path.push("kontentum");
+        local_path.push("files");
+        let _ = std::fs::create_dir_all(local_path.as_path())?; // Create directory if it does not yet exist
+        local_path.push(&file.as_str());
 
-    // Skip if file already exists, otherwise download and write to disk
+        // Skip if file already exists, otherwise download and write to disk
 
-    if std::path::Path::exists(&local_path) {
-        log::info!("File already exists: {}", local_path.display().to_string())
+        if std::path::Path::exists(&local_path) {
+            log::info!("File already exists: {}", local_path.display().to_string())
+        } else {
+            let client = Client::default();
+            let url = format!("{}/{}", KONTENTUM_FILEVAULT_URL, file);
+            log::info!(
+                "Downloading file: {}, saving to {}",
+                url,
+                &local_path.display()
+            );
+            let request = client.get(url).send().await;
+            if request.is_err() {
+                log::warn!("{:?}", request);
+            }
+            let data = request?.body().limit(KONTENTUM_DOWNLOAD_LIMIT_BYTES).await;
+            if data.is_err() {
+                log::warn!("{:?}", data);
+            }
+            let mut file = std::fs::File::create(&local_path)?;
+            let _ = file.write(&data?);
+            log::info!("Downloaded file: {}", &local_path.display().to_string());
+        }
+
+        Ok(local_path.display().to_string())
     } else {
-        let client = Client::default();
-        let url = format!("{}/{}", KONTENTUM_FILEVAULT_URL, kontentum_file.file);
-        log::info!(
-            "Downloading file: {}, saving to {}",
-            url,
-            &local_path.display()
-        );
-        let request = client.get(url).send().await;
-        if request.is_err() {
-            log::warn!("{:?}", request);
-        }
-        let data = request?.body().limit(KONTENTUM_DOWNLOAD_LIMIT_BYTES).await;
-        if data.is_err() {
-            log::warn!("{:?}", data);
-        }
-        let mut file = std::fs::File::create(&local_path)?;
-        let _ = file.write(&data?);
-        log::info!("Downloaded file: {}", &local_path.display().to_string());
+        Err(format!("Failed to download file: {}", &kontentum_file.filename).into())
     }
-
-    Ok(local_path.display().to_string())
 }
