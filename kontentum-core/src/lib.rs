@@ -40,7 +40,7 @@ pub struct KontentumFile {
     pub title: Option<String>,
 
     #[serde(rename = "type")]
-    pub ty: String,
+    pub ty: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
