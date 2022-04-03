@@ -20,7 +20,7 @@ pub enum KontentumVariableCollection {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct KontentumExhibitInfo {
     pub client_id: i32,
-    pub clients: Vec<KontentumClient>,
+    // pub clients: Vec<KontentumClient>,
     pub liveupdate: bool,
     pub name: String,
     pub ping: i32,
