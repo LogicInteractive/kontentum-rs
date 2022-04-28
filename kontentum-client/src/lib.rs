@@ -1,6 +1,7 @@
 use actix_web::client::Client;
 pub use kontentum_core::*;
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 use std::io::Write;
 
 const KONTENTUM_DOWNLOAD_LIMIT_BYTES: usize = 1_000_000_000; // 1 GB limit
@@ -12,7 +13,14 @@ pub fn get_json_path(exhibit_token: &str) -> std::io::Result<std::path::PathBuf>
     Ok(local_path_buf)
 }
 
-pub async fn download_exhibit<T: DeserializeOwned>(
+pub fn get_cbor_path(exhibit_token: &str) -> std::io::Result<std::path::PathBuf> {
+    let mut local_path_buf = std::env::current_dir()?;
+    local_path_buf.push("kontentum");
+    local_path_buf.push(format!("{}.cbor", exhibit_token).as_str());
+    Ok(local_path_buf)
+}
+
+pub async fn download_exhibit<T: DeserializeOwned + Serialize>(
     exhibit_token: &str,
 ) -> Result<KontentumExhibit<T>, Box<dyn std::error::Error>> {
     let exhibit_url = format!("{}/rest/getExhibit/{}", KONTENTUM_URL, exhibit_token);
@@ -36,12 +44,19 @@ pub async fn download_exhibit<T: DeserializeOwned>(
     log::info!("Downloaded exhibit: {}", &local_path.display().to_string());
 
     let json_string = std::fs::read_to_string(&local_path)?;
-    let kontentum_exhibit = serde_json::from_str(&json_string);
-
-    kontentum_exhibit.map_err(|e| {
+    let kontentum_exhibit = serde_json::from_str(&json_string).map_err(|e| {
         log::warn!("Kontentum parse error: {:?}", e);
         e.into()
-    })
+    });
+
+    if let Ok(kontentum_exhibit) = &kontentum_exhibit {
+        let local_cbor_path = get_cbor_path(exhibit_token)?;
+        let _ = std::fs::create_dir_all(local_cbor_path.parent().ok_or("can't resolve parent")?)?; // Create directory if it does not yet exist
+        let cbor_file = std::fs::File::create(&local_cbor_path)?;
+        serde_cbor::to_writer(cbor_file, &kontentum_exhibit)?;
+    }
+
+    kontentum_exhibit
 }
 
 pub async fn download_file(
